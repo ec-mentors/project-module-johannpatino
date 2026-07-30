@@ -53,3 +53,47 @@ DELETE gives back 204 No Content literally means "it worked and im deliberately 
 the ids keep incrementing and skip numbers when i delete stuff. thought this was a bug.
 
 it's not. the id comes from a sequence, which is a counter postgres keeps completely separate from the table. it hands out numbers and never takes them back. deleting a row doesnt tell the sequence anything, it doesnt even know the table exists. failed inserts eat numbers too. the reason is concurrency, if the counter rolled back on every failed transaction then inserts would have to queue up waiting on each other and it would be slow.
+
+
+### **29/07 - 30/07**
+
+spent most of time improving and fixing the build plan claude did, since what it previously marked as a week work I did in one day.
+
+also learned some concepts that are going to be useful, I will be writing here the concepts and what I managed to understand from them. 
+
+- Foreign keys: 
+    
+    A foreign key is a column thats holds ANOTHER TABLE'S primary key value, this would be extremely useful later when adding ingredients in different languages, the ingredient itself would be added in an `ingredient` class and there would be another class maybe `ingredient_name` that has an id of the language name of the ingredients as well as the foreign key of the ingredient so they can be tied together.
+
+- The owning side:
+
+    Is whichever side carries `@JoinColumn` or `@JoinTable`, that's the side Hibernate reads when deciding what SQL to write, the other side declares `mappedBy`, it's Hibernate being told "this field maps to no column, ignore it when generating SQL.
+
+- FetchType
+
+    - Lazy: 
+
+        Hibernate puts a proxy in the field: a stand-in object holding only the id. The SELECT for the real data doesn"t run until something calls the getter.
+
+    - Eager:
+
+        The data is loaded immediately alongside its parent, in the same query or a follow-up.
+
+    The JPA default for `@ManyToOne` is `EAGER`, it is regarded as a bad default. When I go to write the RecipeIngredients I should change it to `LAZY`, otherwise everything will be loaded up every time, wheter I want to or not
+
+- Cascade and orphanRemoval
+
+    - Cascade - operations flow from parent to child
+
+        Without it, JPA treats every entity independently.  Save a Recipe holding three brand-new RecipeIngredient objects and you get:
+
+        ```
+        TransientObjectException: object references an unsaved transient instance
+        ```
+        Hibernate saved the recipe, found references to three objects it has never seen, and refuses to guess. You'd have to save each child yourself, in the right order.
+
+    - orphanRemoval - the child dies when it"s disowned
+
+        This one activates when a child is removed from the parent's collection while the parent stays alive. 
+
+        This is what I need for editing. When someone edits a recipe and drops "200 g onion" from the ingredient list, the recipe isn't going anywhere, but that ingredient line has to.

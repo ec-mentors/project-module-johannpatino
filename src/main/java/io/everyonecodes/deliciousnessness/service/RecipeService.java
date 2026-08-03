@@ -2,7 +2,7 @@ package io.everyonecodes.deliciousnessness.service;
 
 import io.everyonecodes.deliciousnessness.model.Recipe;
 import io.everyonecodes.deliciousnessness.repository.RecipeRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

@@ -48,13 +48,6 @@ GET all(called READ on postman) returns a json array with square brackets instea
 
 DELETE gives back 204 No Content literally means "it worked and im deliberately sending you nothing back", which is right, the thing is gone, what would it even return. sent the same delete twice and the second one gave 404, that's the existsById check doing its job.
 
-**something I realized today**
-
-the ids keep incrementing and skip numbers when i delete stuff. thought this was a bug.
-
-it's not. the id comes from a sequence, which is a counter postgres keeps completely separate from the table. it hands out numbers and never takes them back. deleting a row doesnt tell the sequence anything, it doesnt even know the table exists. failed inserts eat numbers too. the reason is concurrency, if the counter rolled back on every failed transaction then inserts would have to queue up waiting on each other and it would be slow.
-
-
 ### **29/07 - 30/07**
 
 spent most of time improving and fixing the build plan claude did, since what it previously marked as a week work I did in one day.
@@ -97,3 +90,39 @@ also learned some concepts that are going to be useful, I will be writing here t
         This one activates when a child is removed from the parent's collection while the parent stays alive. 
 
         This is what I need for editing. When someone edits a recipe and drops "200 g onion" from the ingredient list, the recipe isn't going anywhere, but that ingredient line has to.
+
+    - Transactional
+
+        A transaction is a group of database operations that all succeed together or all fail together.
+
+---
+
+after a small break, I continue. 
+### **03/08**
+
+
+Created the `Category` entity, it has a new thing worth noting, in the `@Column` we have `unique = true`, this is important so no duplicates of category can be created.
+
+Created the `Ingredient` entity, same way as the Category one. In it there's the `canonicalName` column, this would be the label for an ingredient on a database, and later another entity would hold all the different language names.
+
+added both repository for category and ingredient, nothing notable here, added one method in the interface of each to find by their respective Strings.
+
+Created the `IngredientName` Entity, this one has more stuff since it's getting the Foreign Key from Ingredient, and connecting to it, 
+
+```
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"name", "language_code"}))
+```
+- 
+
+
+```
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "ingredient_id")
+    private Ingredient ingredient;
+```
+
+- ManyToOne : Many `IngredientName` point at one `Ingredient` one name has one ingredient, and there could be several names pointing at one ingredient.
+
+- FetchType.LAZY: overriding the default, if no every IngredientName one loads would drag its Ingredient along in a second query. if there are several rows of IngredientName, an EAGER fetching type would mean several pointless extra `SELECT`'s to fetch a `canonicalName` that is never read.  
+
+the data type would be the object Ingredient, here it differs from raw SQL, with Hibernate you navigate to the object and it turns that integer from Ingredient into a column in IngredientName. 

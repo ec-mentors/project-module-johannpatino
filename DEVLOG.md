@@ -55,3 +55,9 @@ The takeaway: the ORM's schema is not the schema I designed, and the gaps are wh
 `ResponseEntity`. I get the basic idea — an HTTP response is three things (status code, headers, body) and `ResponseEntity` is a Java object holding all three, so returning one lets me set the status instead of always getting 200. Fine.
 
 ---
+
+## Entry 3 - Learning useful concepts.
+
+**Date:** 29/07/2026 & 30/07/2026
+
+**Goal:** 

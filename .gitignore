@@ -32,3 +32,4 @@ build/
 ### VS Code ###
 .vscode/
 build_plan.md
+/FirstSprint.md

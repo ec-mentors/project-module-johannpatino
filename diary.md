@@ -126,3 +126,10 @@ Created the `IngredientName` Entity, this one has more stuff since it's getting 
 - FetchType.LAZY: overriding the default, if no every IngredientName one loads would drag its Ingredient along in a second query. if there are several rows of IngredientName, an EAGER fetching type would mean several pointless extra `SELECT`'s to fetch a `canonicalName` that is never read.  
 
 the data type would be the object Ingredient, here it differs from raw SQL, with Hibernate you navigate to the object and it turns that integer from Ingredient into a column in IngredientName. 
+
+
+### **04/08**
+
+created the `RecipeIngredient` entity, this one has two foreign keys, being `recipe_id` and `ingredient_id`. nothing new or of too much complicity, just another entity that will connect soon to Recipe. 
+
+created the first issue on github, with the help of ai for redaction and prepared everything for further developing this week. 

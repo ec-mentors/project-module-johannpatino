@@ -2,7 +2,8 @@
 ## Blog post candidates
 
 - **Database ids are not counts** — assumed sequential ids, found gaps, learned why sequences don't roll back.
-- **Dirty checking** — an UPDATE happens with no `save()` call anywhere. Still unverified.
+- **Dirty checking** — an UPDATE happens with no `save()` call anywhere. Verified in Entry 4.
+- **The bug the tutorial promised me vs the one I got** — everyone warns about infinite JSON recursion in bidirectional relationships. One line of config meant I hit a completely different error instead, with a completely different cause. Strongest candidate so far.
 
 ## Entry 1 — Project setup
 
@@ -56,8 +57,143 @@ The takeaway: the ORM's schema is not the schema I designed, and the gaps are wh
 
 ---
 
-## Entry 3 - Learning useful concepts.
+## Entry 3 — The data model
 
-**Date:** 29/07/2026 & 30/07/2026
+**Date:** 03/08/2026 – 07/08/2026
 
-**Goal:** 
+**Goal:** Turn one working entity into an actual data model — categories, ingredients,
+multilingual ingredient names, and the relationships between all of them.
+
+**Built:**
+- `model/Category.java` — id, name, `unique = true`
+- `model/Ingredient.java` — id, canonicalName, `unique = true`
+- `model/IngredientName.java` — the first foreign key in the project
+- `model/RecipeIngredient.java` — join entity carrying quantity, unit, preparation
+- Collections on `Recipe` — `@ManyToMany` to Category, `@OneToMany` to RecipeIngredient
+- Four repositories
+
+The rule I landed on: **if two things can appear in the same recipe with different amounts,
+they're different ingredients.** `preparation` is for how something is cut (chopped, diced),
+not for what it is (red, green, smoked).
+
+It matters for search too. `preparation` is free text and isn't searchable — anything I want
+to search by has to actually *be* an `Ingredient`. That's a data modelling decision, not a code
+one, and the schema was never the problem.
+
+**Why `RecipeIngredient` is an entity and `recipe_categories` isn't:** a plain many-to-many
+join table only holds two foreign keys. The moment the relationship itself carries data —
+"200 g, chopped" describes *this recipe's use of this ingredient* — the pairing becomes a thing
+in its own right and needs its own id. Categories carry no data, so Hibernate manages that join
+table invisibly.
+
+**Why categories can't be `@OneToMany`:** the annotation describes both directions. `@OneToMany`
+would also mean each Category belongs to exactly one Recipe, which puts a `recipe_id` column on
+the `category` table — and then only one recipe could ever be "Soup".
+
+**Cascade decisions:** `RecipeIngredient` gets `cascade = ALL` and `orphanRemoval = true`
+because it's owned by exactly one recipe and meaningless without it. `categories` gets neither —
+`CascadeType.ALL` there would mean deleting one soup recipe deletes the "Soup" category itself,
+taking every other recipe's link with it. Deleting flows *down* to owned things, never
+*sideways* to shared ones.
+
+**The thing that made it click:** after adding both collections to `Recipe`, I looked at the
+`recipe` table and it hadn't changed at all. No new columns.
+
+Which is right — the categories live in `recipe_categories`, and the ingredient lines live in
+`recipe_ingredient.recipe_id`. In Java, `Recipe` looks like it *contains* both. In the database
+it contains neither; other tables point at it. That gap between the object model and the table
+layout is the whole reason the next entry happened.
+
+---
+
+## Entry 4 — The bug I was promised, and the one I got
+
+**Date:** 07/08/2026 – 17/08/2026
+
+**Goal:** Read a recipe back with its categories and ingredients attached.
+
+**Built:**
+- `dto/RecipeIngredientDto.java` — record: ingredientId, ingredientName, quantity, unit, preparation
+- `dto/RecipeDto.java` — record, holds `Set<String> categories` and `List<RecipeIngredientDto>`
+- Both with static `from()` mapping methods
+- `RecipeService` — every method returns a DTO now, every method is `@Transactional`
+- `RecipeController` — returns DTOs, no entity ever leaves the service
+
+**Open question I hit:** `GET /api/recipes/1` started returning 500 the moment `Recipe` gained
+its two collections. I hadn't touched the controller, the service, or the repository — code that
+worked and was Postman-tested in week 1 broke retroactively.
+
+**What happened:**
+
+```
+HttpMessageNotWritableException: Could not write JSON:
+Cannot lazily initialize collection of role 'Recipe.categories' with key '1' (no session)
+```
+
+The sequence, read off the log:
+
+1. Hibernate runs one query — `SELECT ... FROM recipe WHERE id = ?`, no joins
+2. It never looks at the categories. `@ManyToMany` defaults to `FetchType.LAZY`, so it leaves an
+   "I owe you this when you ask" in that field and moves on
+3. My service method returns, the transaction commits, the connection closes
+4. Spring *then* serializes the recipe to JSON, reaches the IOU, and tries to cash it in
+5. No connection. Throw.
+
+The part I had backwards at first: I assumed it failed because there were no categories. It
+doesn't. **The IOU doesn't say "there are none", it says "I never looked."** Finding out the
+answer is zero still requires a query. It would crash identically with three categories or
+fifty — the failure is *needing to ask at all*, not what the answer would have been.
+
+I also didn't get the bug I was told to expect. Every guide warns about infinite JSON recursion
+in bidirectional relationships — Recipe → RecipeIngredient → Recipe, forever. I never reached it,
+because `spring.jpa.open-in-view=false` in my properties closes the session at the end of the
+transaction, so serialization dies before the loop can form. One line of config decided which of
+two bugs I got, and they have completely different causes.
+
+**The fix, and the part that surprised me:** DTOs — but the DTO isn't what fixes it, the *timing*
+is. This line is doing the real work:
+
+```java
+recipe.getCategories().stream()
+        .map(Category::getName)
+        .collect(Collectors.toSet())
+```
+
+Reading the collection forces the query to run, and because the service method is
+`@Transactional`, that happens while the connection is still open. The same mapping called from
+the controller would have thrown the identical exception. A DTO built too late is no better than
+an entity.
+
+One level down, `RecipeIngredientDto` shows exactly what lazy withholds:
+
+```java
+recipeIngredient.getIngredient().getId()             // free — no query
+recipeIngredient.getIngredient().getCanonicalName()  // fires a SELECT
+```
+
+The IOU already knows its own id, because that value came from the `ingredient_id` column in the
+row it was built from. The name isn't in that column, so it needs a trip to the database.
+
+A benefit I got without planning it: `RecipeIngredientDto` has no `RecipeDto` field. References
+only point one way now, so the recursion I was warned about is structurally impossible rather
+than merely avoided — even if I switched everything to `EAGER` tomorrow.
+
+I didn't use `@JsonIgnore` or `@JsonManagedReference`, which are the usual quick fixes. Both
+annotate the entity to solve an API problem, permanently tying the JSON shape to the database
+shape — and neither would have fixed this error anyway, since they prevent cycles, not unloaded
+proxies. The rule I'm keeping instead: **entities never leave the service layer.**
+
+This also closed the open question from Entry 2. Dirty checking is real: inside a `@Transactional`
+method, an entity loaded by `findById` is *managed*, so Hibernate snapshots it on load and diffs
+it at commit. `save()` is only needed for new objects with no id — which is why `create()` calls
+it and `update()` doesn't. The UPDATE appears in the log at the closing brace of the method, not
+at the setter.
+
+**What I didn't _fully_ understand:**
+
+The mapper fires a separate query for each collection it touches. Fine for one recipe. But
+`findAll()` maps every recipe the same way, so listing 30 recipes means roughly 60 extra queries —
+once for each recipe's categories and once for each recipe's ingredients. I know this is called
+the N+1 problem and that `JOIN FETCH` or `@EntityGraph` is the answer, but I haven't used either
+yet, and at 15 recipes I can't measure the difference. Noting it so I recognise it when the list
+page feels slow.

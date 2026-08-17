@@ -181,3 +181,32 @@ plain object is what spring uses to make the json.
 ## **17/08**
 
 
+created the first dtos, the `RecipeIngredientDto` and the `RecipeDto` 
+
+
+
+in the `RecipeDto` we pull the name of the categories this way 
+
+***
+  recipe.getCategories().stream()
+                        .map(Category::getName)
+                        .collect(Collectors.toSet())
+***
+this collection forces the query to run, now the json gets the names instead of an *"I owe you"* from hibernate
+
+this also happens in the next line 
+
+***
+recipe.getRecipeIngredients().stream()
+.map(RecipeIngredientDto::from)
+.toList()
+***
+
+loads the ingredients and returns the list in order for Spring to be able to read them and turn them into Json.
+
+updated the RecipeService to use now the Dto, and now every single one uses `@Transactional`, this is the actual fix for the 500 error, this keeps the door open while from() runs.
+
+added `readOnly = true` on the find methods to tell hibernate that nothin will change there, so it skips dirty checking, this is only for very small performance gain.
+
+
+the controller changes the same way, now everything is using a dto.

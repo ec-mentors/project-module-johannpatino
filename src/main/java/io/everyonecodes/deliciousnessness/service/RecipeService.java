@@ -1,5 +1,6 @@
 package io.everyonecodes.deliciousnessness.service;
 
+import io.everyonecodes.deliciousnessness.dto.RecipeDto;
 import io.everyonecodes.deliciousnessness.model.Recipe;
 import io.everyonecodes.deliciousnessness.repository.RecipeRepository;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,21 +19,27 @@ public class RecipeService {
     }
 
 
-    public Recipe create(Recipe recipe) {
+    @Transactional
+    public RecipeDto create(Recipe recipe) {
         recipe.setId(null);
-        return recipeRepository.save(recipe);
+        return RecipeDto.from(recipeRepository.save(recipe));
     }
 
-    public List<Recipe> findAll() {
-        return recipeRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<RecipeDto> findAll() {
+        return recipeRepository.findAll().stream()
+                .map(RecipeDto::from)
+                .toList();
     }
 
-    public Optional<Recipe> findById(Long id) {
-        return recipeRepository.findById(id);
+    @Transactional(readOnly = true)
+    public Optional<RecipeDto> findById(Long id) {
+        return recipeRepository.findById(id)
+                .map(RecipeDto::from);
     }
 
     @Transactional
-    public Optional<Recipe> update(Long id, Recipe updatedRecipe) {
+    public Optional<RecipeDto> update(Long id, Recipe updatedRecipe) {
         return recipeRepository.findById(id).map(oldRecipe -> {
             oldRecipe.setRecipeName(updatedRecipe.getRecipeName());
             oldRecipe.setServings(updatedRecipe.getServings());
@@ -41,7 +48,7 @@ public class RecipeService {
             oldRecipe.setSeason(updatedRecipe.getSeason());
             oldRecipe.setImageUrl(updatedRecipe.getImageUrl());
             oldRecipe.setSourceUrl(updatedRecipe.getSourceUrl());
-            return oldRecipe;
+            return RecipeDto.from(oldRecipe);
         });
     }
 

@@ -130,6 +130,54 @@ the data type would be the object Ingredient, here it differs from raw SQL, with
 
 ### **04/08**
 
-created the `RecipeIngredient` entity, this one has two foreign keys, being `recipe_id` and `ingredient_id`. nothing new or of too much complicity, just another entity that will connect soon to Recipe. 
+created the `RecipeIngredient` entity, this one has two foreign keys, being `recipe_id` and `ingredient_id`. is the join between recipe and ingredient.it has 2 `@ManyToOne` one to `Recipe` and one to `Ingredient` first table with two foreign keys. 
 
 created the first issue on github, with the help of ai for redaction and prepared everything for further developing this week. 
+
+
+
+## **07/08**
+
+added two collections to `Recipe`: 
+
+***
+@ManyToMany
+@JoinTable(name = "recipe_categories",
+joinColumns = @JoinColumn(name = "recipe_id"),
+inverseJoinColumns = @JoinColumn(name = "category_id"))
+private Set<Category> categories = new HashSet<>();
+***
+
+***
+@OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
+private List<RecipeIngredient> recipeIngredients = new ArrayList<>();
+***
+
+`Set` for categories because a recipe can only be the same category once (of course, it cannot be twice soup)
+
+`List` for ingredients because the order matters.
+
+also added `addIngredient` and `removeIngredient` methods
+
+now this creates a crash, the crash occurs in recipe categories, since the default for manytomany is fetchtype lazy.
+hibernate doesn't even look at the categories, it just leaves an "i owe you this information
+when you ask for it" in that field and moves on. then my service method finishes and the
+connection closes. then spring receives the recipe and tries to turn it into json, sees the
+"i owe you" and tries to cash it in, but the connection is already closed so it crashes.
+
+it crashes every time, not just when the categories are empty. the problem is having to ask at
+all, not what the answer would have been. finding out there are zero still needs a query.
+
+this gets fixed with dtos. a dto is just a plain object holding the actual values, no i owe
+yous, and hibernate has nothing to do with it. the important part is WHEN the snapshot is
+taken, it has to happen while the connection is still open, otherwise it would crash in exactly
+the same way. so the service copies everything into the dto inside the transaction, and that
+plain object is what spring uses to make the json.
+
+##
+### **SICK WEEK**
+##
+
+## **17/08**
+
+

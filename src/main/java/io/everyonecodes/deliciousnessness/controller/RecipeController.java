@@ -1,6 +1,7 @@
 package io.everyonecodes.deliciousnessness.controller;
 
 import io.everyonecodes.deliciousnessness.dto.RecipeDto;
+import io.everyonecodes.deliciousnessness.dto.RecipeSummaryDto;
 import io.everyonecodes.deliciousnessness.model.Recipe;
 import io.everyonecodes.deliciousnessness.service.RecipeService;
 import org.springframework.http.HttpStatus;
@@ -20,7 +21,7 @@ public class RecipeController {
     }
 
     @GetMapping
-    public List<RecipeDto> findAll() {
+    public List<RecipeSummaryDto> findAll() {
         return recipeService.findAll();
     }
 
@@ -39,7 +40,7 @@ public class RecipeController {
 
     @PutMapping("/{id}")
     public ResponseEntity<RecipeDto> update(@PathVariable Long id,
-                                         @RequestBody Recipe recipe) {
+                                            @RequestBody Recipe recipe) {
         return recipeService.update(id, recipe)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());

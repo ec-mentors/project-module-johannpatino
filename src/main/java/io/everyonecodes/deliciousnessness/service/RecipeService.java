@@ -1,6 +1,7 @@
 package io.everyonecodes.deliciousnessness.service;
 
 import io.everyonecodes.deliciousnessness.dto.RecipeDto;
+import io.everyonecodes.deliciousnessness.dto.RecipeSummaryDto;
 import io.everyonecodes.deliciousnessness.mapper.RecipeMapper;
 import io.everyonecodes.deliciousnessness.model.Recipe;
 import io.everyonecodes.deliciousnessness.repository.RecipeRepository;
@@ -29,10 +30,8 @@ public class RecipeService {
     }
 
     @Transactional(readOnly = true)
-    public List<RecipeDto> findAll() {
-        return recipeRepository.findAll().stream()
-                .map(recipeMapper::toDto)
-                .toList();
+    public List<RecipeSummaryDto> findAll() {
+        return recipeRepository.findAllBy();
     }
 
     @Transactional(readOnly = true)

@@ -7,6 +7,10 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -43,4 +47,23 @@ public class Recipe {
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @ManyToMany
+    @JoinTable(name = "recipe_categories",
+            joinColumns = @JoinColumn(name = "recipe_id"),
+            inverseJoinColumns = @JoinColumn(name = "category_id"))
+    private Set<Category> categories = new HashSet<>();
+
+    @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RecipeIngredient> recipeIngredients = new ArrayList<>();
+
+    public void addIngredient(RecipeIngredient recipeIngredient) {
+        recipeIngredients.add(recipeIngredient);
+        recipeIngredient.setRecipe(this);
+    }
+
+    public void removeIngredient(RecipeIngredient recipeIngredient) {
+        recipeIngredients.remove(recipeIngredient);
+        recipeIngredient.setRecipe(null);
+    }
 }

@@ -208,5 +208,26 @@ updated the RecipeService to use now the Dto, and now every single one uses `@Tr
 
 added `readOnly = true` on the find methods to tell hibernate that nothin will change there, so it skips dirty checking, this is only for very small performance gain.
 
-
 the controller changes the same way, now everything is using a dto.
+
+
+### next up:
+
+    - improve dtos x
+    - input dto for creating recipes x
+    - some testing (not much since its going to change anyways, just have to make sure for now im getting the expected results and formatting) 
+    - search queries, filters and autocompletion.
+    - create readme.md
+
+## **21/08**
+
+removed the .from of the dtos and improved this with a mapper and added a `CategoryDto`, now categories are being handled as objects and not as just Strings.
+
+the mapper includes `toDto`, `toCategoryDto` and `toIngredientDto`, this handles all the data coming out
+
+this is better because the dto package doesnt use `model`anymore, only the `Season` enum. the dtos are just shapes now, they don't need entities to exist.
+
+injected the mapper into the service, now no entities are ever leaving the service
+
+added `IngredientService` with one main method `findOrCreate`, this method is called from `RecipeService` when `CreateRecipeRequest` is called. the method normalises the input and checks if the ingredient matches any of the existing ones, if not it creates a new ingredient. 
+

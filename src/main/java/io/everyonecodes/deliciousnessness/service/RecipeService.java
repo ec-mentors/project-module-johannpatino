@@ -1,31 +1,45 @@
 package io.everyonecodes.deliciousnessness.service;
 
+import io.everyonecodes.deliciousnessness.dto.CreateRecipeIngredientRequest;
+import io.everyonecodes.deliciousnessness.dto.CreateRecipeRequest;
 import io.everyonecodes.deliciousnessness.dto.RecipeDto;
 import io.everyonecodes.deliciousnessness.dto.RecipeSummaryDto;
 import io.everyonecodes.deliciousnessness.mapper.RecipeMapper;
+import io.everyonecodes.deliciousnessness.model.Ingredient;
 import io.everyonecodes.deliciousnessness.model.Recipe;
+import io.everyonecodes.deliciousnessness.model.RecipeIngredient;
 import io.everyonecodes.deliciousnessness.repository.RecipeRepository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class RecipeService {
 
     private final RecipeRepository recipeRepository;
     private final RecipeMapper recipeMapper;
+    private final CategoryService categoryService;
+    private final IngredientService ingredientService;
 
-    public RecipeService(RecipeRepository recipeRepository, RecipeMapper recipeMapper) {
+    public RecipeService(RecipeRepository recipeRepository, RecipeMapper recipeMapper, CategoryService categoryService, IngredientService ingredientService) {
         this.recipeRepository = recipeRepository;
         this.recipeMapper = recipeMapper;
+        this.categoryService = categoryService;
+        this.ingredientService = ingredientService;
     }
 
-
     @Transactional
-    public RecipeDto create(Recipe recipe) {
-        recipe.setId(null);
+    public RecipeDto create(CreateRecipeRequest request) {
+        Recipe recipe = new Recipe();
+
+        copyFields(request, recipe);
+        replaceCategories(request, recipe);
+        replaceIngredients(request, recipe);
+
         return recipeMapper.toDto(recipeRepository.save(recipe));
     }
 
@@ -41,17 +55,15 @@ public class RecipeService {
     }
 
     @Transactional
-    public Optional<RecipeDto> update(Long id, Recipe updatedRecipe) {
-        return recipeRepository.findById(id).map(oldRecipe -> {
-            oldRecipe.setRecipeName(updatedRecipe.getRecipeName());
-            oldRecipe.setServings(updatedRecipe.getServings());
-            oldRecipe.setCookTimeMinutes(updatedRecipe.getCookTimeMinutes());
-            oldRecipe.setInstructions(updatedRecipe.getInstructions());
-            oldRecipe.setSeason(updatedRecipe.getSeason());
-            oldRecipe.setImageUrl(updatedRecipe.getImageUrl());
-            oldRecipe.setSourceUrl(updatedRecipe.getSourceUrl());
-            return recipeMapper.toDto(oldRecipe);
-        });
+    public Optional<RecipeDto> update(Long id, CreateRecipeRequest request) {
+        return recipeRepository.findById(id)
+                .map(recipe ->
+                {
+                    copyFields(request, recipe);
+                    replaceCategories(request, recipe);
+                    replaceIngredients(request, recipe);
+                    return recipeMapper.toDto(recipe);
+                });
     }
 
     public boolean deleteById(Long id) {
@@ -60,5 +72,34 @@ public class RecipeService {
         }
         recipeRepository.deleteById(id);
         return true;
+    }
+
+    private void copyFields(CreateRecipeRequest request, Recipe recipe) {
+        recipe.setRecipeName((request.recipeName()));
+        recipe.setServings(request.servings());
+        recipe.setCookTimeMinutes(request.cookTimeMinutes());
+        recipe.setInstructions(request.instructions());
+        recipe.setSeason(request.season());
+        recipe.setImageUrl(request.imageUrl());
+        recipe.setSourceUrl(request.sourceUrl());
+    }
+
+    private void replaceCategories(CreateRecipeRequest request, Recipe recipe) {
+        recipe.getCategories().clear();
+        recipe.getCategories().addAll(categoryService.findOrCreateAll(request.categories()));
+    }
+
+    private void replaceIngredients(CreateRecipeRequest request, Recipe recipe) {
+        recipe.getRecipeIngredients().clear();
+
+        if (request.ingredients() == null) {
+            return;
+        }
+
+        for (CreateRecipeIngredientRequest line : request.ingredients()) {
+            Ingredient ingredient = ingredientService.findOrCreate(line.name(), request.languageCode());
+
+            recipe.addIngredient(new RecipeIngredient(ingredient, line.quantity(), line.unit(), line.preparation()));
+        }
     }
 }

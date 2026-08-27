@@ -53,3 +53,5 @@ public class RecipeMapper {
                 recipeIngredient.getPreparation());
     }
 }
+
+// mapstruct

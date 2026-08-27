@@ -1,5 +1,6 @@
 package io.everyonecodes.deliciousnessness.controller;
 
+import io.everyonecodes.deliciousnessness.dto.CreateRecipeRequest;
 import io.everyonecodes.deliciousnessness.dto.RecipeDto;
 import io.everyonecodes.deliciousnessness.dto.RecipeSummaryDto;
 import io.everyonecodes.deliciousnessness.model.Recipe;
@@ -34,14 +35,14 @@ public class RecipeController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public RecipeDto create(@RequestBody Recipe recipe) {
-        return recipeService.create(recipe);
+    public RecipeDto create(@RequestBody CreateRecipeRequest request) {
+        return recipeService.create(request);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<RecipeDto> update(@PathVariable Long id,
-                                            @RequestBody Recipe recipe) {
-        return recipeService.update(id, recipe)
+                                            @RequestBody CreateRecipeRequest request) {
+        return recipeService.update(id, request)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }

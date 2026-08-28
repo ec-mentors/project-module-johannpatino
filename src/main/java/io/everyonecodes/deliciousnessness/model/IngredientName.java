@@ -23,10 +23,11 @@ public class IngredientName {
     @Column(nullable = false, length = 128)
     private String name;
 
+    @Enumerated
     @Column(nullable = false, length = 8)
-    private String languageCode;
+    private Language languageCode;
 
-    public IngredientName(Ingredient ingredient, String name, String languageCode) {
+    public IngredientName(Ingredient ingredient, String name, Language languageCode) {
         this.ingredient = ingredient;
         this.name = name;
         this.languageCode = languageCode;

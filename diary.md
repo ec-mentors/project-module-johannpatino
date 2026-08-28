@@ -231,3 +231,28 @@ injected the mapper into the service, now no entities are ever leaving the servi
 
 added `IngredientService` with one main method `findOrCreate`, this method is called from `RecipeService` when `CreateRecipeRequest` is called. the method normalises the input and checks if the ingredient matches any of the existing ones, if not it creates a new ingredient. 
 
+## **27/08**
+
+finished all the input DTO's , didn't change the mapper with mapstruct cause i read theres ocnflict between that and Lombok , would have to read more about it. 
+
+at first thought about checking if recipe had duplicate ingredients, scratched this idea very quickly since it is obviously possible for example one for cooking and one for garnish, and even if the user makes a mistake they can later edit the recipe and delete the duplicate. this also meant chanigng the model class, and dropping the uniqueness constraint previously stated, also had to manually delete it from postgres since i have `ddl-auto=update`. 
+
+
+***important***
+
+- `Categories` are plain strings coming in, but objects with Ids when coming out. 
+- `Ingredients` are sent by NAME, not by id
+
+
+also added a `languageCode` to the request that is ONLY used when the user is creating a brand new ingredient that doesnt exist in the database already, this will be implemented with a dropdown for languages so the user cannot make a mistake and be very specific. maybe i need to add a new `Enum` for that.
+
+started on some testing, created a new `application-test.properties` in `src/test/resources`, this with `@ActiveProfiles("test")` in the test files makes them use this application properties file instead of the other one for the project. this one has `ddl-auto=create-drop`, schema is built fresh from the entities at the start of every run and dropped at the end, so tests always start  from an empty database. 
+
+`IngredientServiceTest`
+
+- `@Mock` creates a fake repository, all the methods but they do nothing and return nothing unless told otherwise. 
+- `@InjectMocks` builds a real `IngredientService` and passes the fakes into its constructor.
+-`when(...).thenReturn(...)` scripts the fake: ****"When someone calls `findByNameIgnoreCase` with `cebula`, hand back the list."***, otherwise mockito would return an empty list.
+-`verify(ingredientRepository, never()).save(any())` checks side effects one can't see in the result, and `never()` checks something DIDN'T happen
+-`ArgumentCaptor` grabs whatever got passed to a mock so you can assert on it. 
+

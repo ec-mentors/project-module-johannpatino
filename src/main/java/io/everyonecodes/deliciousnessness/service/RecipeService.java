@@ -9,10 +9,10 @@ import io.everyonecodes.deliciousnessness.model.Ingredient;
 import io.everyonecodes.deliciousnessness.model.Recipe;
 import io.everyonecodes.deliciousnessness.model.RecipeIngredient;
 import io.everyonecodes.deliciousnessness.repository.RecipeRepository;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -64,6 +64,29 @@ public class RecipeService {
                     replaceIngredients(request, recipe);
                     return recipeMapper.toDto(recipe);
                 });
+    }
+
+    @Transactional(readOnly = true)
+    public List<RecipeSummaryDto> searchByName(String query) {
+        if (query == null || query.isBlank()) {
+            return List.of();
+        }
+        return recipeRepository.findByRecipeNameContainingIgnoreCase(query.trim());
+    }
+
+    @Transactional(readOnly = true)
+    public List<RecipeSummaryDto> findByAllIngredientIds(List<Long> ingredientIds) {
+        if (ingredientIds == null || ingredientIds.isEmpty()) {
+            return List.of();
+        }
+        Set<Long> distinctIds = new LinkedHashSet<>(ingredientIds);
+
+        List<Long> recipeIds = recipeRepository.findRecipeIdsWithAllIngredients(distinctIds, distinctIds.size());
+
+        if (recipeIds.isEmpty()) {
+            return List.of();
+        }
+        return recipeRepository.findByIdIn(recipeIds);
     }
 
     public boolean deleteById(Long id) {

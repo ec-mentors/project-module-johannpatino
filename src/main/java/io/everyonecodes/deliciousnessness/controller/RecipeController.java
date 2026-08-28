@@ -3,7 +3,6 @@ package io.everyonecodes.deliciousnessness.controller;
 import io.everyonecodes.deliciousnessness.dto.CreateRecipeRequest;
 import io.everyonecodes.deliciousnessness.dto.RecipeDto;
 import io.everyonecodes.deliciousnessness.dto.RecipeSummaryDto;
-import io.everyonecodes.deliciousnessness.model.Recipe;
 import io.everyonecodes.deliciousnessness.service.RecipeService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +30,16 @@ public class RecipeController {
         return recipeService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/search")
+    public List<RecipeSummaryDto> searchByName(@RequestParam String q) {
+        return recipeService.searchByName(q);
+    }
+
+    @GetMapping("/filter")
+    public List<RecipeSummaryDto> filterByIngredients(@RequestParam List<Long> ingredients) {
+        return recipeService.findByAllIngredientIds(ingredients);
     }
 
     @PostMapping

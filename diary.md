@@ -256,3 +256,43 @@ started on some testing, created a new `application-test.properties` in `src/tes
 -`verify(ingredientRepository, never()).save(any())` checks side effects one can't see in the result, and `never()` checks something DIDN'T happen
 -`ArgumentCaptor` grabs whatever got passed to a mock so you can assert on it. 
 
+
+## **28/08**
+
+wrote the integration test, `RecipeControllerIT`, now the annotations: 
+
+- `@SpringBootTest(webEnviroment = SpringBootTest.WebEnviroment.Random_Port)`: this boots the entire application during test, basically opening a real server for testing. 
+
+- `@LocalServerPort`: injects the port tomcat picked. it cannot be hardcoded since i have `RANDOM_PORT` which is necessary to avoid conflicts if the real live server is running. 
+
+- `@BeforeEach`: making sure i run the client before every test instead of in a field. 
+
+```
+ client = RestTestClient.bindToServer()
+                .baseUrl("http://localhost:" + port)
+                .build();
+```
+this ensures real http requests go over a real socket to the running tomcat server
+
+the test is a simple recipe creation request and then asserting that the recipe was created correctly and their respective fields aswell. 
+
+changed `languageCode` to an enum instead of a plain String. 
+
+---
+
+started the search queries:
+first in the repository
+
+ ```
+ List<RecipeSummaryDto> findByRecipeNameContainingIgnoreCase(String recipeName);
+```
+
+no `@Query` here, spring data reads the method name and writes the sql
+
+- `findBy`: the subject
+- `RecipeName`: the field on Recipe
+- `Containing`: wraps the value in `%...%` (means starts with, contains or ends with)
+- `IgnoreCase`: wraps both sides in `lower()`
+
+and connected this to the service and controller. 
+

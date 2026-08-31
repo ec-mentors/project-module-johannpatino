@@ -1,11 +1,13 @@
 package io.everyonecodes.deliciousnessness.service;
 
+import io.everyonecodes.deliciousnessness.dto.CategoryDto;
 import io.everyonecodes.deliciousnessness.model.Category;
 import io.everyonecodes.deliciousnessness.repository.CategoryRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -23,6 +25,11 @@ public class CategoryService {
 
         return categoryRepository.findByNameIgnoreCase(normalised)
                 .orElseGet(() -> categoryRepository.save(new Category(normalised)));
+    }
+
+    @Transactional(readOnly = true)
+    public List<CategoryDto> findAll() {
+        return categoryRepository.findAllByOrderByNameAsc();
     }
 
     @Transactional

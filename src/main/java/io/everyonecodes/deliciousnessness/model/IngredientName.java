@@ -23,7 +23,7 @@ public class IngredientName {
     @Column(nullable = false, length = 128)
     private String name;
 
-    @Enumerated
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 8)
     private Language languageCode;
 

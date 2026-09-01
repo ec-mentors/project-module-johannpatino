@@ -63,4 +63,19 @@ class IngredientServiceTest {
         assertThat(saved.getValue().getLanguageCode()).isEqualTo(Language.PL);
 
     }
+
+    @Test
+    void unknownName_withoutLanguage_isTaggedEnglish() {
+        when(ingredientNameRepository.findByNameIgnoreCase("sumac"))
+                .thenReturn(List.of());
+        when(ingredientRepository.save(any(Ingredient.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ingredientService.findOrCreate("Sumac", null);
+
+        ArgumentCaptor<IngredientName> saved = ArgumentCaptor.forClass(IngredientName.class);
+        verify(ingredientNameRepository).save(saved.capture());
+
+        assertThat(saved.getValue().getLanguageCode()).isEqualTo(Language.EN);
+    }
 }

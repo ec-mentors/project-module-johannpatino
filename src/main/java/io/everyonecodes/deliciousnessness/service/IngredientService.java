@@ -1,5 +1,6 @@
 package io.everyonecodes.deliciousnessness.service;
 
+import io.everyonecodes.deliciousnessness.dto.IngredientDto;
 import io.everyonecodes.deliciousnessness.dto.IngredientSuggestionDto;
 import io.everyonecodes.deliciousnessness.model.Ingredient;
 import io.everyonecodes.deliciousnessness.model.IngredientName;
@@ -10,9 +11,7 @@ import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class IngredientService {
@@ -39,7 +38,7 @@ public class IngredientService {
         }
 
         Ingredient ingredient = ingredientRepository.save(new Ingredient(normalisedName));
-        ingredientNameRepository.save(new IngredientName(ingredient, normalisedName, language));
+        ingredientNameRepository.save(new IngredientName(ingredient, normalisedName, resolvedLanguage));
         return ingredient;
     }
 
@@ -55,6 +54,19 @@ public class IngredientService {
             byIngredientId.putIfAbsent(match.id(), match);
         }
         return byIngredientId.values().stream().limit(10).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<IngredientDto> findByIds(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return ingredientRepository.findByIdIn(ids);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Ingredient> findEntity(Long id) {
+        return ingredientRepository.findById(id);
     }
 
     private Ingredient preferLanguage(List<IngredientName> matches, Language language) {

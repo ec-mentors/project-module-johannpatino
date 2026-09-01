@@ -16,7 +16,7 @@ import org.springframework.test.web.servlet.client.RestTestClient;
 import java.util.List;
 import java.util.Set;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -41,15 +41,15 @@ class RecipeControllerIT {
                 4,
                 30,
                 "1. Cook spaghetti. 2. Fry guanciale. 3. Mix off the heat.",
-                Season.SUMMER,
+                Set.of(Season.SUMMER),
                 null,
                 null,
                 Language.EN,
                 Set.of("pasta", "dinner"),
                 List.of(
-                        new CreateRecipeIngredientRequest("spaghetti", 400.0, "g", null),
-                        new CreateRecipeIngredientRequest("guanciale", 150.0, "g", "diced"),
-                        new CreateRecipeIngredientRequest("pecorino", 50.0, "g", "grated")));
+                        new CreateRecipeIngredientRequest(null, "spaghetti", null, 400.0, "g", null),
+                        new CreateRecipeIngredientRequest(null, "guanciale", null, 150.0, "g", "diced"),
+                        new CreateRecipeIngredientRequest(null, "pecorino", null, 50.0, "g", "grated")));
 
         RecipeDto created = client.post()
                 .uri("/api/recipes")

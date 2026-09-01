@@ -33,8 +33,8 @@ public class RecipeController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) List<Long> ingredients,
             @RequestParam(required = false) List<Long> categories,
-            @RequestParam(required = false) Season season) {
-        return recipeService.search(q, ingredients, categories, season);
+            @RequestParam(required = false) List<Season> seasons) {
+        return recipeService.search(q, ingredients, categories, seasons);
     }
 
     @PostMapping

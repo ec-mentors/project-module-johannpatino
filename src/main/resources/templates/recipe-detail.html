@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${recipe.recipeName()}">Recipe</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap"
+          rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<header class="site-header">
+    <a class="brand" href="/recipes">Deliciousnessness</a>
+    <span style="flex:1"></span>
+    <a class="btn btn-primary" href="/recipes/new">+ Add a recipe</a>
+</header>
+
+<main class="page">
+
+    <a class="back-link" href="/recipes">&larr; Back </a>
+
+    <img th:if="${recipe.imageUrl()}" th:src="${recipe.imageUrl()}"
+         th:alt="${recipe.recipeName()}" class="hero">
+
+    <div class="recipe-layout">
+
+        <div class="recipe-main">
+
+            <h1 class="recipe-title" th:text="${recipe.recipeName()}">Recipe name</h1>
+
+            <p class="meta">
+                <span th:text="|&#9201; ${recipe.cookTimeMinutes()} min|">&#9201; 25 min</span>
+                &middot;
+                <span th:text="|&#127869; ${recipe.servings()} servings|">&#127869; 2 servings</span>
+            </p>
+
+            <p class="tags"
+               th:if="${not #lists.isEmpty(recipe.categories()) or not #lists.isEmpty(recipe.seasons())}">
+
+                <a th:each="s : ${recipe.seasons()}"
+                   th:href="@{/recipes(seasons=${s})}"
+                   th:text="${#strings.toLowerCase(s)}"
+                   class="tag tag-season">summer</a>
+
+                <a th:each="category : ${recipe.categories()}"
+                   th:href="@{/recipes(categories=${category.id()})}"
+                   th:text="${category.name()}"
+                   class="tag">soup</a>
+            </p>
+
+            <h2>Ingredients</h2>
+            <ul class="ingredients">
+                <li th:each="line : ${recipe.ingredients()}">
+                    <span class="amount">
+                        <span th:if="${line.quantity()}"
+                              th:text="${line.quantity() % 1 == 0} ? ${line.quantity().longValue()} : ${line.quantity()}">300</span>
+                        <span th:if="${line.unit()}" th:text="${line.unit()}">g</span>
+                    </span>
+                    <span>
+                        <a th:href="@{/recipes(ingredients=${line.ingredientId()})}"
+                           th:text="${line.ingredientName()}"></a>
+                        <span class="prep" th:if="${line.preparation()}"
+                              th:text="|, ${line.preparation()}|">, chopped</span>
+                    </span>
+                </li>
+            </ul>
+
+            <h2>Instructions</h2>
+            <div class="instructions" th:text="${recipe.instructions()}">Steps go here.</div>
+        </div>
+
+        <aside class="quick-info">
+            <h2>Quick info</h2>
+
+            <dl style="margin:0">
+                <div class="quick-row">
+                    <dt>Cook time</dt>
+                    <dd th:text="|${recipe.cookTimeMinutes()} min|">25 min</dd>
+                </div>
+                <div class="quick-row">
+                    <dt>Servings</dt>
+                    <dd th:text="${recipe.servings()}">2</dd>
+                </div>
+                <div class="quick-row" th:if="${recipe.sourceUrl()}">
+                    <dt>Source</dt>
+                    <dd><a th:href="${recipe.sourceUrl()}" target="_blank" rel="noopener">View original &rarr;</a></dd>
+                </div>
+            </dl>
+
+            <div class="quick-actions">
+                <a class="btn btn-block" th:href="@{/recipes/{id}/edit(id=${recipe.id()})}">Edit recipe</a>
+
+                <form th:action="@{/recipes/{id}/delete(id=${recipe.id()})}" method="post"
+                      onsubmit="return confirm('Delete this recipe?')">
+                    <button type="submit" class="btn btn-block btn-danger">Delete</button>
+                </form>
+            </div>
+        </aside>
+    </div>
+</main>
+
+</body>
+</html>

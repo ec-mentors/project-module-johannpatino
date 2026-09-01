@@ -13,7 +13,7 @@ public record RecipeDto(
         Integer servings,
         Integer cookTimeMinutes,
         String instructions,
-        Season season,
+        Set<Season> seasons,
         String imageUrl,
         String sourceUrl,
         LocalDateTime createdAt,

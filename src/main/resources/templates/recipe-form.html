@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${form.id} == null ? 'New recipe' : 'Edit recipe'">Recipe</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap"
+          rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<header class="site-header">
+    <a class="brand" href="/recipes">Deliciousnessness</a>
+</header>
+
+<main class="page form-page">
+
+    <a class="back-link" href="/recipes">&larr; Cancel</a>
+    <h1 class="recipe-title" th:text="${form.id} == null ? 'Add a new recipe' : 'Edit recipe'"
+        style="margin-bottom:2rem">Add a new recipe</h1>
+
+    <form th:action="@{/recipes/save}" th:object="${form}" method="post" class="form-card">
+
+        <input type="hidden" th:field="*{id}">
+
+        <label class="field">
+            <span>Recipe name</span>
+            <input type="text" th:field="*{recipeName}" placeholder="e.g. Pasta Carbonara" required>
+        </label>
+
+        <div class="field-row">
+            <label class="field">
+                <span>Cook time (minutes)</span>
+                <input type="number" th:field="*{cookTimeMinutes}" min="0" placeholder="30" required>
+            </label>
+            <label class="field">
+                <span>Servings</span>
+                <input type="number" th:field="*{servings}" min="1" placeholder="4" required>
+            </label>
+        </div>
+
+        <fieldset>
+            <legend>Seasons</legend>
+            <div class="checkbox-grid">
+                <label th:each="s : ${seasons}">
+                    <input type="checkbox" th:field="*{seasons}" th:value="${s}">
+                    <span th:text="${#strings.toLowerCase(s)}">summer</span>
+                </label>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Categories</legend>
+            <div class="checkbox-grid">
+                <label th:each="category : ${allCategories}">
+                    <input type="checkbox" th:field="*{categoryIds}" th:value="${category.id()}">
+                    <span th:text="${category.name()}">soup</span>
+                </label>
+            </div>
+
+            <details class="new-category">
+                <summary>+ New category</summary>
+                <input type="text" th:field="*{newCategories}" placeholder="Comma-separated new categories">
+            </details>
+        </fieldset>
+
+        <fieldset>
+            <legend>Ingredients</legend>
+            <table class="ingredient-rows">
+                <tr>
+                    <th>Ingredient</th>
+                    <th>Qty</th>
+                    <th>Unit</th>
+                    <th>Preparation</th>
+                    <th></th>
+                </tr>
+                <tbody id="ingredient-rows">
+                <tr class="ingredient-row" th:each="line, stat : *{ingredients}">
+                    <td class="name-cell">
+                        <input type="text" class="ingredient-name" autocomplete="off"
+                               placeholder="e.g. spaghetti"
+                               th:field="*{ingredients[__${stat.index}__].name}">
+                        <input type="hidden" th:field="*{ingredients[__${stat.index}__].ingredientId}">
+                        <select class="ingredient-language" hidden
+                                title="Language of this ingredient name"
+                                th:field="*{ingredients[__${stat.index}__].languageCode}">
+                            <option th:each="l : ${languages}" th:value="${l}" th:text="${l}">EN</option>
+                        </select>
+                        <ul class="suggestions" hidden></ul>
+                    </td>
+                    <td><input type="number" step="any" placeholder="200"
+                               th:field="*{ingredients[__${stat.index}__].quantity}"></td>
+                    <td><input type="text" placeholder="g"
+                               th:field="*{ingredients[__${stat.index}__].unit}"></td>
+                    <td><input type="text" placeholder="chopped"
+                               th:field="*{ingredients[__${stat.index}__].preparation}"></td>
+                    <td>
+                        <button type="button" class="row-remove" aria-label="Remove row">&times;</button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <template id="ingredient-row-template">
+                <tr class="ingredient-row">
+                    <td class="name-cell">
+                        <input type="text" class="ingredient-name" autocomplete="off"
+                               placeholder="e.g. spaghetti" name="ingredients[__INDEX__].name">
+                        <input type="hidden" name="ingredients[__INDEX__].ingredientId">
+                        <select class="ingredient-language" hidden
+                                title="Language of this ingredient name"
+                                name="ingredients[__INDEX__].languageCode">
+                            <option th:each="l : ${languages}" th:value="${l}" th:text="${l}">EN</option>
+                        </select>
+                        <ul class="suggestions" hidden></ul>
+                    </td>
+                    <td><input type="number" step="any" placeholder="200"
+                               name="ingredients[__INDEX__].quantity"></td>
+                    <td><input type="text" placeholder="g" name="ingredients[__INDEX__].unit"></td>
+                    <td><input type="text" placeholder="chopped"
+                               name="ingredients[__INDEX__].preparation"></td>
+                    <td>
+                        <button type="button" class="row-remove" aria-label="Remove row">&times;</button>
+                    </td>
+                </tr>
+            </template>
+
+            <p class="hint">Leave rows blank to skip them.</p>
+            <button type="button" class="btn" id="add-ingredient-row"
+                    style="margin-top:0.75rem">+ Add ingredient
+            </button>
+        </fieldset>
+
+        <label class="field">
+            <span>Instructions</span>
+            <textarea th:field="*{instructions}" rows="12"
+                      placeholder="Write your step-by-step instructions here..." required></textarea>
+        </label>
+
+        <div class="field-row">
+            <label class="field">
+                <span>Image URL</span>
+                <input type="url" th:field="*{imageUrl}" placeholder="https://...">
+            </label>
+            <label class="field">
+                <span>Source URL</span>
+                <input type="url" th:field="*{sourceUrl}" placeholder="https://original-recipe-website.com">
+            </label>
+        </div>
+
+        <div class="form-actions">
+            <a class="btn" href="/recipes">Cancel</a>
+            <button type="submit" class="btn btn-primary">Save recipe</button>
+        </div>
+    </form>
+</main>
+
+<script th:src="@{/js/recipe-form.js}"></script>
+</body>
+</html>

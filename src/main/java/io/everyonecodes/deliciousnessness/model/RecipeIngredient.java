@@ -31,8 +31,12 @@ public class RecipeIngredient {
     @Column(length = 128)
     private String preparation;
 
-    public RecipeIngredient(Ingredient ingredient, Double quantity, String unit, String preparation) {
+    @Column(length = 128)
+    private String displayName;
+
+    public RecipeIngredient(Ingredient ingredient, String displayName, Double quantity, String unit, String preparation) {
         this.ingredient = ingredient;
+        this.displayName = displayName;
         this.quantity = quantity;
         this.unit = unit;
         this.preparation = preparation;

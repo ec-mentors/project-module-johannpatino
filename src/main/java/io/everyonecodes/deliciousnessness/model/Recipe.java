@@ -34,9 +34,11 @@ public class Recipe {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String instructions;
 
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "recipe_seasons", joinColumns = @JoinColumn(name = "recipe_id"))
     @Enumerated(EnumType.STRING)
-    @Column(length = 20)
-    private Season season;
+    @Column(name = "season", length = 20)
+    private Set<Season> seasons = new HashSet<>();
 
     @Column(length = 2048)
     private String imageUrl;

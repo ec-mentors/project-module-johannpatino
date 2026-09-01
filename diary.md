@@ -296,3 +296,32 @@ no `@Query` here, spring data reads the method name and writes the sql
 
 and connected this to the service and controller. 
 
+
+## **31/08**
+
+finished all the logic of searching and filtering.
+
+had to change some stuff for the logic to work, like creating a `IngredientSuggestionDto` aswell as controllers for `Ingredient` and `Category`
+
+added specific queries to `Recipe` and `IngredientName` repositories, now the whole logic is as follows: 
+
+the user can use the main searchbar to search for a recipe **name**, there will be a dropdown with tickboxes for season, category and ingredient. the user can tick any of the boxes to add the filter to the query and search recipes this way aswell, for ingredients there will also be a smaller search bar so the user can search for ingredients faster. all this searches are combinable thanks to a method in the `RecipeService` called `narrow`, which when combined with the method `search` it makes a `Set` of all the found recipes with all of the different ways of filtering combined. A `Set` will deal with this data faster, since it's not numbered and it will not allow any duplicates aswell.
+
+## **01/09**
+
+using claude parsed through Open Food Facts taxonomy on ingredients, grabbed the ones useful to me and also included some more from a file with some of the recipes needed to be added, connected them all to their respective `Ingredient` - `IngredientName` , currently at 4960 ingredients. all this ingredients are in a data.sql so when eventually sent to a hosting service this information will be created and stored on the database. 
+
+using references from other recipe websites and the figma design, guided claude to create a fully functional frontend with thymeleaf.
+
+javascript for the functionality part, live search, filtering clicking buttons, etc.
+
+also changed `RecipeIngredient` to have a String called `displayName`, which works to show the exact name the ingredient was written on in the recipe, before it just connected to the canonnical name and it showed this one instead. 
+
+now the recipe stores an id, instead of the word, now the recipe correctly points to the same 'Onion' whether I wrote 'Zwiebel' or 'Cebula'.
+
+for this week: sort through last added, cleanup, readme, devlog. 
+*since i started focusing on finishing the functionality i got a bit sloppy with the code, theres some unused and/or redundant methods and some improvements that can be done.*
+
+future: user auth, seasonal recommendations, favorites
+
+*this are features i stated 'if i had time' but for next week i will attempt to implement this features, this will make me get the feeling of a fully completed product.*

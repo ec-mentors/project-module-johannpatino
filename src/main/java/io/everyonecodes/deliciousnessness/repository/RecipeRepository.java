@@ -28,18 +28,22 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
     List<RecipeSummaryDto> findByIdIn(Collection<Long> recipeIds);
 
     @Query("""
-        SELECT r.id FROM Recipe r
-        WHERE lower(r.recipeName) LIKE lower(concat('%', :query, '%'))
-        """)
+            SELECT r.id FROM Recipe r
+            WHERE lower(r.recipeName) LIKE lower(concat('%', :query, '%'))
+            """)
     List<Long> findIdsByNameContaining(@Param("query") String query);
 
     @Query("""
-        SELECT DISTINCT r.id FROM Recipe r
-        JOIN r.categories c
-        WHERE c.id IN :categoryIds
-        """)
+            SELECT DISTINCT r.id FROM Recipe r
+            JOIN r.categories c
+            WHERE c.id IN :categoryIds
+            """)
     List<Long> findIdsByAnyCategory(@Param("categoryIds") Collection<Long> categoryIds);
 
-    @Query("SELECT r.id FROM Recipe r WHERE r.season = :season")
-    List<Long> findIdsBySeason(@Param("season") Season season);
+    @Query("""
+            SELECT DISTINCT r.id FROM Recipe r
+            JOIN r.seasons s
+            WHERE s IN :seasons
+            """)
+    List<Long> findIdsByAnySeason(@Param("seasons") Collection<Season> seasons);
 }

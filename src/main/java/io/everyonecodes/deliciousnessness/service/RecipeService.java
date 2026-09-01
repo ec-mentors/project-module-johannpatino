@@ -5,13 +5,11 @@ import io.everyonecodes.deliciousnessness.dto.CreateRecipeRequest;
 import io.everyonecodes.deliciousnessness.dto.RecipeDto;
 import io.everyonecodes.deliciousnessness.dto.RecipeSummaryDto;
 import io.everyonecodes.deliciousnessness.mapper.RecipeMapper;
-import io.everyonecodes.deliciousnessness.model.Ingredient;
-import io.everyonecodes.deliciousnessness.model.Recipe;
-import io.everyonecodes.deliciousnessness.model.RecipeIngredient;
-import io.everyonecodes.deliciousnessness.model.Season;
+import io.everyonecodes.deliciousnessness.model.*;
 import io.everyonecodes.deliciousnessness.repository.RecipeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import io.everyonecodes.deliciousnessness.model.Language;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -52,7 +50,7 @@ public class RecipeService {
     }
 
     @Transactional(readOnly = true)
-    public List<RecipeSummaryDto> search(String query, List<Long> ingredientIds, List<Long> categoryIds, Season season) {
+    public List<RecipeSummaryDto> search(String query, List<Long> ingredientIds, List<Long> categoryIds, List<Season> seasons) {
         Set<Long> matchingIds = null;
 
         if (query != null && !query.isBlank()) {
@@ -67,8 +65,8 @@ public class RecipeService {
             matchingIds = narrow(matchingIds, recipeRepository.findIdsByAnyCategory(categoryIds));
         }
 
-        if (season != null) {
-            matchingIds = narrow(matchingIds, recipeRepository.findIdsBySeason(season));
+        if (seasons != null && !seasons.isEmpty()) {
+            matchingIds = narrow(matchingIds, recipeRepository.findIdsByAnySeason(seasons));
         }
 
         if (matchingIds == null) {
@@ -107,7 +105,10 @@ public class RecipeService {
         recipe.setServings(request.servings());
         recipe.setCookTimeMinutes(request.cookTimeMinutes());
         recipe.setInstructions(request.instructions());
-        recipe.setSeason(request.season());
+        recipe.getSeasons().clear();
+        if (request.seasons() != null) {
+            recipe.getSeasons().addAll(request.seasons());
+        }
         recipe.setImageUrl(request.imageUrl());
         recipe.setSourceUrl(request.sourceUrl());
     }
@@ -125,10 +126,22 @@ public class RecipeService {
         }
 
         for (CreateRecipeIngredientRequest line : request.ingredients()) {
-            Ingredient ingredient = ingredientService.findOrCreate(line.name(), request.languageCode());
+            Ingredient ingredient = resolveIngredient(line, request.languageCode());
 
-            recipe.addIngredient(new RecipeIngredient(ingredient, line.quantity(), line.unit(), line.preparation()));
+            recipe.addIngredient(new RecipeIngredient(
+                    ingredient, line.name().trim(), line.quantity(), line.unit(), line.preparation()));
         }
+    }
+
+    private Ingredient resolveIngredient(CreateRecipeIngredientRequest line, Language language) {
+        if (line.ingredientId() != null) {
+            Optional<Ingredient> existing = ingredientService.findEntity(line.ingredientId());
+            if (existing.isPresent()) {
+                return existing.get();
+            }
+        }
+        Language lineLanguage = (line.languageCode() != null) ? line.languageCode() : language;
+        return ingredientService.findOrCreate(line.name(), lineLanguage);
     }
 
     private Set<Long> narrow(Set<Long> current, List<Long> matches) {

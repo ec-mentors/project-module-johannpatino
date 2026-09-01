@@ -11,7 +11,7 @@ public record CreateRecipeRequest(
         Integer servings,
         Integer cookTimeMinutes,
         String instructions,
-        Season season,
+        Set<Season> seasons,
         String imageUrl,
         String sourceUrl,
         Language languageCode,
